@@ -3,12 +3,14 @@ import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import Persons from "./components/Persons";
 import personService from "./services/persons";
+import Notification from "./components/Notification";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     personService
@@ -35,24 +37,46 @@ const App = () => {
     ) {
       personService
         .update(pdata.id, { ...pdata, number: newNumber })
-        .then((response) =>
+        .then((response) => {
           setPersons(
             persons.map((person) =>
               person.id === pdata.id ? response : person
             )
-          )
-        )
-        .catch((err) => console.log(err));
+          );
+          setNotification({
+            message: `Phone number of ${newName} is successfully updated`,
+            isError: false,
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          setNotification({
+            message: `Updation Failed. ${newName}'s phone number is not updated`,
+            isError: true,
+          });
+        });
     }
 
     if (!pdata) {
       personService
         .create({ name: newName, number: newNumber })
-        .then((response) => setPersons([...persons, response]))
-        .catch((err) => console.log(err));
+        .then((response) => {
+          setPersons([...persons, response]);
+          setNotification({ message: `Added ${newName}`, isError: false });
+        })
+        .catch((err) => {
+          console.log(err);
+          setNotification({
+            message: `Contact "${newName}" saving failed"`,
+            isError: true,
+          });
+        });
     }
     setNewName("");
     setNewNumber("");
+    setTimeout(() => {
+      setNotification(null);
+    }, 5000);
   };
 
   const handleFilter = (e) => setFilter(e.target.value);
@@ -63,8 +87,21 @@ const App = () => {
         .deletePerson(id)
         .then((response) => {
           setPersons(persons.filter((person) => person.id !== id));
+          setNotification({
+            message: `Information of ${name} has been successfully deleted from the server`,
+            isError: false,
+          });
         })
-        .catch((err) => console.log(err));
+        .catch((err) => {
+          console.log(err);
+          setNotification({
+            message: `Deletion failed... Information of ${name} is not deleted from the server`,
+            isError: true,
+          });
+        });
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
     }
   };
 
@@ -78,6 +115,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification notification={notification} />
       <Filter handleFilter={handleFilter} filter={filter} />
       <h3>add a new</h3>
       <PersonForm
