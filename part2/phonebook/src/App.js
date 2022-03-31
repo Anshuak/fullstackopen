@@ -26,14 +26,31 @@ const App = () => {
 
   const handleAddContact = (e) => {
     e.preventDefault();
-    if (persons.find(({ name }) => name === newName))
-      return alert(`${newName} is already added to phonebook`);
+    let pdata = persons.find(({ name }) => name === newName);
+    if (
+      pdata &&
+      window.confirm(
+        `${newName} is already added to phonebook. replace the old number with a new one?`
+      )
+    ) {
+      personService
+        .update(pdata.id, { ...pdata, number: newNumber })
+        .then((response) =>
+          setPersons(
+            persons.map((person) =>
+              person.id === pdata.id ? response : person
+            )
+          )
+        )
+        .catch((err) => console.log(err));
+    }
 
-    personService
-      .create({ name: newName, number: newNumber })
-      .then((response) => setPersons([...persons, response]))
-      .catch((err) => console.log(err));
-
+    if (!pdata) {
+      personService
+        .create({ name: newName, number: newNumber })
+        .then((response) => setPersons([...persons, response]))
+        .catch((err) => console.log(err));
+    }
     setNewName("");
     setNewNumber("");
   };
